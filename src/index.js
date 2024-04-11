@@ -1,4 +1,7 @@
 import express from "express";
+import dotenv from "dotenv";
+dotenv.config();
+const key = process.env.OPEN_AI_KEY;
 
 const app = express();
 
