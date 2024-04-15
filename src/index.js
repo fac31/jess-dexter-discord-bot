@@ -17,10 +17,15 @@ client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
+import startGame from "./components/startGame.js";
 client.on("messageCreate", (msg) => {
     if (msg.content === "ping") {
         msg.reply("pong");
         console.log("ping detected");
+    }
+
+    if (msg.content == "fancy message") {
+        startGame.execute(msg);
     }
 });
 
