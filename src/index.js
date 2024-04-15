@@ -17,17 +17,28 @@ app.listen(3000, () => {
 
 // Initialise Discord bot
 import { Client, GatewayIntentBits } from "discord.js";
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+});
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.on("message", (msg) => {
+client.on("messageCreate", (msg) => {
     if (msg.content === "ping") {
         msg.reply("pong");
         console.log("ping detected");
     }
+});
+
+client.once("messageCreate", (msg) => {
+    if (msg.author.bot) return;
+    msg.channel.send("Hello!");
 });
 
 client.login(discordToken);
