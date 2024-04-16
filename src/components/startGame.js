@@ -7,15 +7,28 @@ import {
     EmbedBuilder,
 } from "discord.js";
 
+// an object containing the different ids used for different components
+// in case we need to access the components from an event somewhere else
+const START_GAME_IDS = {
+    GAME_TYPE_SELECT: "start-game-type",
+    PLAYER_TYPE_SELECT: "start-player-type",
+    CONFIRM_BUTTON: "start-confirm",
+    CANCEL_BUTTON: "start-cancel",
+};
+
 const startGameEmbed = (interaction) => {
     const embed = new EmbedBuilder()
         .setColor(0xffa600)
-        .setTitle(`${interaction.user.globalName}'s HeadsUp Game`)
         .setAuthor({
-            name: interaction.user.globalName,
+            name: `${interaction.user.globalName}'s HeadsUp Game`,
             iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`,
         })
-        .addFields({ name: "Game ID", value: "<ID>" })
+        .setTitle("Game ID")
+        .setDescription("<game id>")
+        .addFields(
+            { name: "Game Type", value: "-", inline: true },
+            { name: "Player Type", value: "-", inline: true }
+        )
         .setTimestamp();
 
     return embed;
@@ -23,7 +36,7 @@ const startGameEmbed = (interaction) => {
 
 export const startGameComponent = async (interaction) => {
     const gameTypeSelect = new StringSelectMenuBuilder()
-        .setCustomId("start-game-type")
+        .setCustomId(START_GAME_IDS.GAME_TYPE_SELECT)
         .setPlaceholder("Game Type")
         .addOptions(
             new StringSelectMenuOptionBuilder()
@@ -43,7 +56,7 @@ export const startGameComponent = async (interaction) => {
     const gameTypeRow = new ActionRowBuilder().addComponents(gameTypeSelect);
 
     const playerTypeSelect = new StringSelectMenuBuilder()
-        .setCustomId("start-player-type")
+        .setCustomId(START_GAME_IDS.PLAYER_TYPE_SELECT)
         .setPlaceholder("Play As")
         .addOptions(
             new StringSelectMenuOptionBuilder()
@@ -65,12 +78,13 @@ export const startGameComponent = async (interaction) => {
     );
 
     const confirm = new ButtonBuilder()
-        .setCustomId("start-confirm")
+        .setCustomId(START_GAME_IDS.CONFIRM_BUTTON)
         .setLabel("Start Game!")
-        .setStyle(ButtonStyle.Primary);
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(true);
 
     const cancel = new ButtonBuilder()
-        .setCustomId("cancel")
+        .setCustomId(START_GAME_IDS.CANCEL_BUTTON)
         .setLabel("Cancel")
         .setStyle(ButtonStyle.Secondary);
 
@@ -82,5 +96,6 @@ export const startGameComponent = async (interaction) => {
         components: [gameTypeRow, playerTypeRow, buttonRow],
         ephemeral: true,
         embeds: [embed],
+        fetchReply: true,
     });
 };
