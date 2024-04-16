@@ -1,5 +1,3 @@
-// Permissions required: Privileged Gateway Intents -> Message Content Intent
-
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 
 const execute = async (interaction) => {
