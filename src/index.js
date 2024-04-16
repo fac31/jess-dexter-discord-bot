@@ -18,13 +18,6 @@ export const client = new Client({
     ],
 });
 
-import startGame from "./components/startGame.js";
-client.on("messageCreate", (msg) => {
-    if (msg.content == "fancy message") {
-        startGame.execute(msg);
-    }
-});
-
 handleInitialise(client);
 handlePing(client);
 handleIntro(client);
@@ -35,13 +28,14 @@ client.login(discordToken);
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 client.commands = new Collection();
 
-const __filename = new URL(import.meta.url).pathname;
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const foldersPath = path.join(__dirname, "../commands");
+const foldersPath = path.join(__dirname, "./commands");
 const commandFolders = fs.readdirSync(foldersPath);
 
 for (const folder of commandFolders) {
@@ -50,8 +44,9 @@ for (const folder of commandFolders) {
         .readdirSync(commandsPath)
         .filter((file) => file.endsWith(".js"));
     for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
+        const filePath = `./commands/${folder}/${file}`;
         const command = await import(filePath);
+
         if ("data" in command && "execute" in command) {
             client.commands.set(command.data.name, command);
         } else {
