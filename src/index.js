@@ -5,9 +5,10 @@ const discordToken = process.env.DISCORD_KEY;
 
 // Initialise Discord bot
 import { Client, GatewayIntentBits, Collection, Events } from "discord.js";
-import { handleIntro } from "../events/introHandler.js";
-import { handlePing } from "../events/pingHandler.js";
-import { handleInitialise } from "../events/initialiseHandler.js";
+import { handleIntro } from "./events/introHandler.js";
+import { handlePing } from "./events/pingHandler.js";
+import { handleInitialise } from "./events/initialiseHandler.js";
+import { handleInteraction } from "./events/interactionHandler.js";
 
 export const client = new Client({
     intents: [
@@ -27,6 +28,7 @@ client.on("messageCreate", (msg) => {
 handleInitialise(client);
 handlePing(client);
 handleIntro(client);
+handleInteraction(client);
 client.login(discordToken);
 
 // Slash commands
@@ -59,33 +61,3 @@ for (const folder of commandFolders) {
         }
     }
 }
-
-client.on(Events.InteractionCreate, async (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = interaction.client.commands.get(interaction.commandName);
-
-    if (!command) {
-        console.error(
-            `No command matching ${interaction.commandName} was found.`
-        );
-        return;
-    }
-
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({
-                content: "There was an error while executing this command!",
-                ephemeral: true,
-            });
-        } else {
-            await interaction.reply({
-                content: "There was an error while executing this command!",
-                ephemeral: true,
-            });
-        }
-    }
-});
