@@ -7,8 +7,9 @@ const discordToken = process.env.DISCORD_KEY;
 import { Client, GatewayIntentBits, Collection, Events } from "discord.js";
 import { handleIntro } from "../events/introHandler.js";
 import { handlePing } from "../events/pingHandler.js";
+import { handleInitialise } from "../events/initialiseHandler.js";
 
-const client = new Client({
+export const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
@@ -16,13 +17,9 @@ const client = new Client({
     ],
 });
 
-client.on("ready", () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-});
-
-client.on("messageCreate", handlePing);
-client.once("messageCreate", handleIntro);
-
+handleInitialise(client);
+handlePing(client);
+handleIntro(client);
 client.login(discordToken);
 
 // Slash commands
