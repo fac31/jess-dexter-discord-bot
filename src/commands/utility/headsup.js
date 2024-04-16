@@ -1,5 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 
+import { startGameComponent } from "../../components/startGame.js";
+
 const data = new SlashCommandBuilder()
     .setName("headsup")
     .setDescription("Play Heads Up!")
@@ -13,7 +15,7 @@ const data = new SlashCommandBuilder()
 async function execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
     if (subcommand === "start") {
-        await interaction.reply("Starting a new game!");
+        await startGameComponent(interaction);
     } else if (subcommand === "join") {
         await interaction.reply("Joining an existing game!");
     }
