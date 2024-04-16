@@ -24,9 +24,6 @@ client.login(discordToken);
 
 // Slash commands
 
-import fs from "node:fs";
-import path from "node:path";
-
 client.commands = new Collection();
 
 const __filename = new URL(import.meta.url).pathname;
@@ -80,5 +77,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 ephemeral: true,
             });
         }
+    }
+});
+
+client.on("messageCreate", (msg) => {
+    if (msg.content === "ping") {
+        msg.reply("pong");
+        console.log("ping detected");
+    }
+
+    if (msg.content == "fancy message") {
+        startGame.execute(msg);
     }
 });
