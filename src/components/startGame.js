@@ -7,6 +7,8 @@ import {
     EmbedBuilder,
     ComponentType,
 } from "discord.js";
+import { gamesIndex } from "../gamesIndex.js";
+import { joinGameAction, joinGameEmbed } from "./joinGame.js";
 
 // this may be held somewhere else at a later date
 // it maps user id to another object holding the interaction data
@@ -16,11 +18,12 @@ const GAME_TIMEOUT = 60_000;
 
 // an object containing the different ids used for different components
 // in case we need to access the components from an event somewhere else
-const START_GAME_IDS = {
+export const START_GAME_IDS = {
     GAME_TYPE_SELECT: "start-game-type",
     PLAYER_TYPE_SELECT: "start-player-type",
     CONFIRM_BUTTON: "start-confirm",
     CANCEL_BUTTON: "start-cancel",
+    JOIN_BUTTON: "join",
 };
 
 const PLAYER_TYPE_VALUE_MAP = {
@@ -141,7 +144,9 @@ export const startGameComponent = async (interaction) => {
     const collectorFilter = (i) => {
         // this stops the error showing that the interaction failed
         // shouldnt need it since we edit but discord thinks we arent doing anything
-        i.deferUpdate();
+        if (i.customId !== START_GAME_IDS.JOIN_BUTTON) {
+            i.deferUpdate();
+        }
         return i.user.id === interaction.user.id;
     };
     // listenes for the string select drop downs to be changed and emits and event if they do
@@ -213,13 +218,83 @@ export const startGameComponent = async (interaction) => {
 
     // if the user takes too long we edit the message and
     // delete their data
+    let startGameClicked = false;
     selectCollector.on("end", () => {
-        interaction.editReply({
-            embeds: [],
-            components: [],
-            content: "Game took too long to start!",
-        });
+        if (!startGameClicked) {
+            interaction.editReply({
+                embeds: [],
+                components: [],
+                content: "Game took too long to start!",
+            });
 
-        cancelGame(interaction);
+            cancelGame(interaction);
+        }
+    });
+
+    buttonCollector.on("collect", (buttonInteraction) => {
+        const currentUserData =
+            currentStartGameInteractions[interaction.user.id];
+        if (buttonInteraction.customId == START_GAME_IDS.CONFIRM_BUTTON) {
+            startGameClicked = true;
+
+            function generateUniqueId() {
+                const randomNumber = Math.floor(Math.random() * 100000);
+                const paddedNumber = randomNumber.toString().padStart(6, "0");
+                return paddedNumber;
+            }
+
+            function getUniqueGameId() {
+                let newId;
+                while (true) {
+                    newId = generateUniqueId();
+                    if (!gamesIndex[newId]) {
+                        break;
+                    }
+                }
+                return newId;
+            }
+            const gameId = getUniqueGameId();
+
+            const newGame = {
+                id: gameId,
+                guesser:
+                    currentUserData.embedData.playerType === "Guesser"
+                        ? interaction.user.username
+                        : null,
+                giver:
+                    currentUserData.embedData.playerType === "Clue Giver"
+                        ? interaction.user.username
+                        : null,
+                gameType: currentUserData.embedData.gameType,
+                gameState: "pending",
+            };
+            gamesIndex[gameId] = newGame;
+
+            if (currentUserData.embedData.gameType === "Private") {
+                interaction.editReply({
+                    embeds: [],
+                    components: [],
+                    content: `Game ID: ${gameId}. Invite a friend to join!`,
+                });
+            }
+
+            const joinComponents = joinGameAction();
+
+            if (currentUserData.embedData.gameType === "Public") {
+                interaction.channel.send({
+                    embeds: [
+                        joinGameEmbed(
+                            interaction,
+                            gameId,
+                            currentUserData.embedData.playerType,
+                            interaction.user.username
+                        ),
+                    ],
+                    components: joinComponents,
+                    content: `Game initiated! Waiting for second player...`,
+                });
+            }
+        }
+        console.log(gamesIndex);
     });
 };
