@@ -16,11 +16,12 @@ const GAME_TIMEOUT = 60_000;
 
 // an object containing the different ids used for different components
 // in case we need to access the components from an event somewhere else
-const START_GAME_IDS = {
+export const START_GAME_IDS = {
     GAME_TYPE_SELECT: "start-game-type",
     PLAYER_TYPE_SELECT: "start-player-type",
     CONFIRM_BUTTON: "start-confirm",
     CANCEL_BUTTON: "start-cancel",
+    JOIN_BUTTON: "join",
 };
 
 const PLAYER_TYPE_VALUE_MAP = {
@@ -117,6 +118,31 @@ const startGameComponents = (data = {}) => {
     return [playerTypeRow, gameTypeRow, buttonRow];
 };
 
+const joinGameEmbed = (interaction, gameId, playerType, player) => {
+    const embed = new EmbedBuilder()
+        .setColor(0xffa600)
+        .setDescription(
+            `ID: ${gameId}\nGuesser: ${playerType === "Guesser" ? player : "Spot open!"}\nClue Giver: ${playerType === "Clue Giver" ? player : "Spot open!"}`
+        )
+        .setAuthor({
+            name: `HeadsUp Game`,
+            iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`,
+        });
+
+    return embed;
+};
+
+const joinGameAction = () => {
+    const join = new ButtonBuilder()
+        .setCustomId(START_GAME_IDS.JOIN_BUTTON)
+        .setLabel("Join Game!")
+        .setStyle(ButtonStyle.Primary);
+
+    const joinButton = new ActionRowBuilder().addComponents(join);
+
+    return [joinButton];
+};
+
 const cancelGame = (interaction) => {
     delete currentStartGameInteractions[interaction.user.id];
 };
@@ -141,7 +167,9 @@ export const startGameComponent = async (interaction) => {
     const collectorFilter = (i) => {
         // this stops the error showing that the interaction failed
         // shouldnt need it since we edit but discord thinks we arent doing anything
-        i.deferUpdate();
+        if (i.customId !== START_GAME_IDS.JOIN_BUTTON) {
+            i.deferUpdate();
+        }
         return i.user.id === interaction.user.id;
     };
     // listenes for the string select drop downs to be changed and emits and event if they do
@@ -254,11 +282,30 @@ export const startGameComponent = async (interaction) => {
             };
             gamesIndex[newId] = newGame;
 
-            interaction.editReply({
-                embeds: [],
-                components: [],
-                content: "Game was started!",
-            });
+            if (currentUserData.embedData.gameType === "Private") {
+                interaction.editReply({
+                    embeds: [],
+                    components: [],
+                    content: `Game ID: ${newId}. Invite a friend to join!`,
+                });
+            }
+
+            const joinComponents = joinGameAction();
+
+            if (currentUserData.embedData.gameType === "Public") {
+                interaction.channel.send({
+                    embeds: [
+                        joinGameEmbed(
+                            interaction,
+                            newId,
+                            currentUserData.embedData.playerType,
+                            interaction.user.username
+                        ),
+                    ],
+                    components: joinComponents,
+                    content: `Game initiated! Waiting for second player...`,
+                });
+            }
         }
         console.log(gamesIndex);
     });
