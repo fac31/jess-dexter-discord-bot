@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from "discord.js";
 
 import { startGameComponent } from "../../components/startGame.js";
+import { joinGame } from "../../joinGame.js";
 // import { joinGameComponent } from "../../components/joinGame.js";
 
 const data = new SlashCommandBuilder()
@@ -10,7 +11,15 @@ const data = new SlashCommandBuilder()
         subcommand.setName("start").setDescription("Start a new game")
     )
     .addSubcommand((subcommand) =>
-        subcommand.setName("join").setDescription("Join a game")
+        subcommand
+            .setName("join")
+            .setDescription("Join a game")
+            .addIntegerOption((option) =>
+                option
+                    .setName("game_id")
+                    .setDescription("Id of the game to join.")
+                    .setRequired(true)
+            )
     );
 
 async function execute(interaction) {
@@ -18,8 +27,9 @@ async function execute(interaction) {
     if (subcommand === "start") {
         await startGameComponent(interaction);
     } else if (subcommand === "join") {
-        // await joinGameComponent(interaction);
-        await interaction.reply("Joining an existing game!");
+        const gameId = interaction.options.getInteger("game_id");
+
+        joinGame(interaction, gameId);
     }
 }
 

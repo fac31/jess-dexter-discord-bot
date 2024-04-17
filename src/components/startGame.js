@@ -7,8 +7,8 @@ import {
     EmbedBuilder,
     ComponentType,
 } from "discord.js";
-import { gamesIndex } from "../gamesIndex.js";
-import { joinGameAction, joinGameEmbed } from "./joinGame.js";
+import { GAME_TYPE, PLAYER_TYPE } from "../gamesIndex.js";
+import { gameInfoComponent } from "./gameInfo.js";
 
 // this may be held somewhere else at a later date
 // it maps user id to another object holding the interaction data
@@ -26,33 +26,37 @@ export const START_GAME_IDS = {
     JOIN_BUTTON: "join",
 };
 
-const PLAYER_TYPE_VALUE_MAP = {
+const GAME_TYPE_VALUE_MAP = {
     private: "Private",
     public: "Public",
 };
-const GAME_TYPE_VALUE_MAP = {
+const PLAYER_TYPE_VALUE_MAP = {
     guesser: "Guesser",
     giver: "Clue Giver",
 };
 
 const startGameEmbed = (interaction, embedData = {}) => {
+    const author = {
+        name: `${interaction.user.globalName}'s HeadsUp Game`,
+    };
+    if (interaction.user.avatar) {
+        author.iconURL = `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`;
+    }
+
     const embed = new EmbedBuilder()
         .setColor(0xffa600)
-        .setAuthor({
-            name: `${interaction.user.globalName}'s HeadsUp Game`,
-            iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`,
-        })
+        .setAuthor(author)
         .setTitle("Game Id")
         .setDescription(embedData.gameId ?? "-")
         .addFields(
             {
-                name: "Game Type",
-                value: embedData.gameType ?? "-",
+                name: "Player Type",
+                value: PLAYER_TYPE_VALUE_MAP[embedData.playerType] ?? "-",
                 inline: true,
             },
             {
-                name: "Player Type",
-                value: embedData.playerType ?? "-",
+                name: "Game Type",
+                value: GAME_TYPE_VALUE_MAP[embedData.gameType] ?? "-",
                 inline: true,
             }
         )
@@ -71,13 +75,13 @@ const startGameComponents = (data = {}) => {
                 .setDescription(
                     "The game can only be joined by a person you give the game Id to."
                 )
-                .setValue("private"),
+                .setValue(GAME_TYPE.PRIVATE),
             new StringSelectMenuOptionBuilder()
                 .setLabel("Public")
                 .setDescription(
                     "The game is joinable by any person that sees the message."
                 )
-                .setValue("public")
+                .setValue(GAME_TYPE.PUBLIC)
         );
 
     const gameTypeRow = new ActionRowBuilder().addComponents(gameTypeSelect);
@@ -91,13 +95,13 @@ const startGameComponents = (data = {}) => {
                 .setDescription(
                     "You can't see the word. Guess what is it by asking questions and narrowing down the possibilities."
                 )
-                .setValue("guesser"),
+                .setValue(PLAYER_TYPE.GUESSER),
             new StringSelectMenuOptionBuilder()
                 .setLabel("Clue Giver")
                 .setDescription(
                     "You can see the word. Answer the questions the other player asks about the word."
                 )
-                .setValue("giver")
+                .setValue(PLAYER_TYPE.GIVER)
         );
 
     const playerTypeRow = new ActionRowBuilder().addComponents(
@@ -167,11 +171,9 @@ export const startGameComponent = async (interaction) => {
 
         if (selectInteraction.customId == START_GAME_IDS.GAME_TYPE_SELECT) {
             const selectedType = selectInteraction.values[0];
-
             // update the current user's embed data so the embed will change
             // and will stay changed if they update a different property
-            currentUserData.embedData.gameType =
-                PLAYER_TYPE_VALUE_MAP[selectedType];
+            currentUserData.embedData.gameType = selectedType;
 
             interaction.editReply({
                 embeds: [
@@ -182,9 +184,7 @@ export const startGameComponent = async (interaction) => {
             selectInteraction.customId == START_GAME_IDS.PLAYER_TYPE_SELECT
         ) {
             const selectedType = selectInteraction.values[0];
-
-            currentUserData.embedData.playerType =
-                GAME_TYPE_VALUE_MAP[selectedType];
+            currentUserData.embedData.playerType = selectedType;
 
             interaction.editReply({
                 embeds: [
@@ -234,67 +234,13 @@ export const startGameComponent = async (interaction) => {
     buttonCollector.on("collect", (buttonInteraction) => {
         const currentUserData =
             currentStartGameInteractions[interaction.user.id];
+
         if (buttonInteraction.customId == START_GAME_IDS.CONFIRM_BUTTON) {
             startGameClicked = true;
 
-            function generateUniqueId() {
-                const randomNumber = Math.floor(Math.random() * 100000);
-                const paddedNumber = randomNumber.toString().padStart(6, "0");
-                return paddedNumber;
-            }
-
-            function getUniqueGameId() {
-                let newId;
-                while (true) {
-                    newId = generateUniqueId();
-                    if (!gamesIndex[newId]) {
-                        break;
-                    }
-                }
-                return newId;
-            }
-            const gameId = getUniqueGameId();
-
-            const newGame = {
-                id: gameId,
-                guesser:
-                    currentUserData.embedData.playerType === "Guesser"
-                        ? interaction.user.username
-                        : null,
-                giver:
-                    currentUserData.embedData.playerType === "Clue Giver"
-                        ? interaction.user.username
-                        : null,
-                gameType: currentUserData.embedData.gameType,
-                gameState: "pending",
-            };
-            gamesIndex[gameId] = newGame;
-
-            if (currentUserData.embedData.gameType === "Private") {
-                interaction.editReply({
-                    embeds: [],
-                    components: [],
-                    content: `Game ID: ${gameId}. Invite a friend to join!`,
-                });
-            }
-
-            const joinComponents = joinGameAction();
-
-            if (currentUserData.embedData.gameType === "Public") {
-                interaction.channel.send({
-                    embeds: [
-                        joinGameEmbed(
-                            interaction,
-                            gameId,
-                            currentUserData.embedData.playerType,
-                            interaction.user.username
-                        ),
-                    ],
-                    components: joinComponents,
-                    content: `Game initiated! Waiting for second player...`,
-                });
-            }
+            gameInfoComponent(interaction, currentUserData);
         }
-        console.log(gamesIndex);
+
+        // console.log(gamesIndex);
     });
 };
