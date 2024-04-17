@@ -7,7 +7,7 @@ import {
     EmbedBuilder,
     ComponentType,
 } from "discord.js";
-
+import { gamesIndex } from "../gamesIndex.js";
 // this may be held somewhere else at a later date
 // it maps user id to another object holding the interaction data
 const currentStartGameInteractions = {};
@@ -213,13 +213,53 @@ export const startGameComponent = async (interaction) => {
 
     // if the user takes too long we edit the message and
     // delete their data
+    let startGameClicked = false;
     selectCollector.on("end", () => {
-        interaction.editReply({
-            embeds: [],
-            components: [],
-            content: "Game took too long to start!",
-        });
+        if (!startGameClicked) {
+            interaction.editReply({
+                embeds: [],
+                components: [],
+                content: "Game took too long to start!",
+            });
 
-        cancelGame(interaction);
+            cancelGame(interaction);
+        }
+    });
+
+    buttonCollector.on("collect", (buttonInteraction) => {
+        const currentUserData =
+            currentStartGameInteractions[interaction.user.id];
+        if (buttonInteraction.customId == START_GAME_IDS.CONFIRM_BUTTON) {
+            startGameClicked = true;
+
+            let maxId = 0;
+            for (const id in gamesIndex) {
+                if (parseInt(id) > maxId) {
+                    maxId = parseInt(id);
+                }
+            }
+            const newId = maxId + 1;
+            const newGame = {
+                id: newId,
+                guesser:
+                    currentUserData.embedData.playerType === "Guesser"
+                        ? interaction.user.username
+                        : null,
+                giver:
+                    currentUserData.embedData.playerType === "Clue Giver"
+                        ? interaction.user.username
+                        : null,
+                gameType: currentUserData.embedData.gameType,
+                gameState: "pending",
+            };
+            gamesIndex[newId] = newGame;
+
+            interaction.editReply({
+                embeds: [],
+                components: [],
+                content: "Game was started!",
+            });
+        }
+        console.log(gamesIndex);
     });
 };
