@@ -8,6 +8,8 @@ import {
     ComponentType,
 } from "discord.js";
 import { gamesIndex } from "../gamesIndex.js";
+import { joinGameAction, joinGameEmbed } from "./joinGame.js";
+
 // this may be held somewhere else at a later date
 // it maps user id to another object holding the interaction data
 const currentStartGameInteractions = {};
@@ -116,31 +118,6 @@ const startGameComponents = (data = {}) => {
     const buttonRow = new ActionRowBuilder().addComponents(cancel, confirm);
 
     return [playerTypeRow, gameTypeRow, buttonRow];
-};
-
-const joinGameEmbed = (interaction, gameId, playerType, player) => {
-    const embed = new EmbedBuilder()
-        .setColor(0xffa600)
-        .setDescription(
-            `ID: ${gameId}\nGuesser: ${playerType === "Guesser" ? player : "Spot open!"}\nClue Giver: ${playerType === "Clue Giver" ? player : "Spot open!"}`
-        )
-        .setAuthor({
-            name: `HeadsUp Game`,
-            iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`,
-        });
-
-    return embed;
-};
-
-const joinGameAction = () => {
-    const join = new ButtonBuilder()
-        .setCustomId(START_GAME_IDS.JOIN_BUTTON)
-        .setLabel("Join Game!")
-        .setStyle(ButtonStyle.Primary);
-
-    const joinButton = new ActionRowBuilder().addComponents(join);
-
-    return [joinButton];
 };
 
 const cancelGame = (interaction) => {
@@ -260,15 +237,26 @@ export const startGameComponent = async (interaction) => {
         if (buttonInteraction.customId == START_GAME_IDS.CONFIRM_BUTTON) {
             startGameClicked = true;
 
-            let maxId = 0;
-            for (const id in gamesIndex) {
-                if (parseInt(id) > maxId) {
-                    maxId = parseInt(id);
-                }
+            function generateUniqueId() {
+                const randomNumber = Math.floor(Math.random() * 100000);
+                const paddedNumber = randomNumber.toString().padStart(6, "0");
+                return paddedNumber;
             }
-            const newId = maxId + 1;
+
+            function getUniqueGameId() {
+                let newId;
+                while (true) {
+                    newId = generateUniqueId();
+                    if (!gamesIndex[newId]) {
+                        break;
+                    }
+                }
+                return newId;
+            }
+            const gameId = getUniqueGameId();
+
             const newGame = {
-                id: newId,
+                id: gameId,
                 guesser:
                     currentUserData.embedData.playerType === "Guesser"
                         ? interaction.user.username
@@ -280,13 +268,13 @@ export const startGameComponent = async (interaction) => {
                 gameType: currentUserData.embedData.gameType,
                 gameState: "pending",
             };
-            gamesIndex[newId] = newGame;
+            gamesIndex[gameId] = newGame;
 
             if (currentUserData.embedData.gameType === "Private") {
                 interaction.editReply({
                     embeds: [],
                     components: [],
-                    content: `Game ID: ${newId}. Invite a friend to join!`,
+                    content: `Game ID: ${gameId}. Invite a friend to join!`,
                 });
             }
 
@@ -297,7 +285,7 @@ export const startGameComponent = async (interaction) => {
                     embeds: [
                         joinGameEmbed(
                             interaction,
-                            newId,
+                            gameId,
                             currentUserData.embedData.playerType,
                             interaction.user.username
                         ),
