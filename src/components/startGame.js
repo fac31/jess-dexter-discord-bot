@@ -148,9 +148,7 @@ export const startGameComponent = async (interaction) => {
     const collectorFilter = (i) => {
         // this stops the error showing that the interaction failed
         // shouldnt need it since we edit but discord thinks we arent doing anything
-        if (i.customId !== START_GAME_IDS.JOIN_BUTTON) {
-            i.deferUpdate();
-        }
+        i.deferUpdate();
         return i.user.id === interaction.user.id;
     };
     // listenes for the string select drop downs to be changed and emits and event if they do
