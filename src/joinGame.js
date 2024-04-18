@@ -1,4 +1,4 @@
-import { gamesIndex } from "./gamesIndex.js";
+import { GAME_STATE, gamesIndex } from "./gamesIndex.js";
 
 const checkGameExists = (interaction, gameId) => {
     let idExists = false;
@@ -75,7 +75,7 @@ export const joinGame = async (interaction, gameId) => {
         game.guesserId = interaction.user.id;
     }
 
-    gamesIndex.gameState = "playing";
+    GAME_STATE.STATUS = "playing";
 
     !interaction.reply({
         ephemeral: true,
