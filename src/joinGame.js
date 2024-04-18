@@ -51,8 +51,8 @@ const checkGameUsers = (interaction, gameId) => {
     return usersUnique;
 };
 
-export const joinGame = (interaction, gameId) => {
-    const game = gamesIndex[gameId];
+export const joinGame = async (interaction, gameId) => {
+    const game = gamesIndex[gameId.toString()];
 
     // Swap to this if check once testing complete
     //   if (
@@ -69,8 +69,10 @@ export const joinGame = (interaction, gameId) => {
 
     if (!game.giver) {
         game.giver = interaction.user.username;
+        game.giverId = interaction.user.id;
     } else {
         game.guesser = interaction.user.username;
+        game.guesserId = interaction.user.id;
     }
 
     gamesIndex.gameState = "playing";
@@ -79,4 +81,15 @@ export const joinGame = (interaction, gameId) => {
         ephemeral: true,
         content: `Joined game!`,
     });
+
+    const channel = interaction.guild.channels.cache.get(interaction.channelId);
+
+    // type 12 creates private thread
+    const gameThread = await channel.threads.create({
+        name: `Game Thread - ${gameId}`,
+        type: 12,
+    });
+
+    await gameThread.members.add(game.giverId);
+    await gameThread.members.add(game.guesserId);
 };

@@ -91,9 +91,17 @@ export const gameInfoComponent = (interaction, currentUserData) => {
             currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
                 ? interaction.user.username
                 : null,
+        guesserId:
+            currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
+                ? interaction.user.id
+                : null,
         giver:
             currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
                 ? interaction.user.username
+                : null,
+        giverId:
+            currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
+                ? interaction.user.id
                 : null,
         gameType: currentUserData.embedData.gameType,
         gameState: GAME_STATE.PENDING,
