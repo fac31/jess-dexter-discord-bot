@@ -55,9 +55,9 @@ const privateGameInfoEmbed = (interaction, gameId) => {
     return embed;
 };
 
-const gameInfoAction = () => {
+const gameInfoAction = (gameId) => {
     const join = new ButtonBuilder()
-        .setCustomId(START_GAME_IDS.JOIN_BUTTON)
+        .setCustomId(`${START_GAME_IDS.JOIN_BUTTON}_${gameId}`)
         .setLabel("Join Game!")
         .setStyle(ButtonStyle.Primary);
 
@@ -91,9 +91,17 @@ export const gameInfoComponent = (interaction, currentUserData) => {
             currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
                 ? interaction.user.username
                 : null,
+        guesserId:
+            currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
+                ? interaction.user.id
+                : null,
         giver:
             currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
                 ? interaction.user.username
+                : null,
+        giverId:
+            currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
+                ? interaction.user.id
                 : null,
         gameType: currentUserData.embedData.gameType,
         gameState: GAME_STATE.PENDING,
@@ -109,7 +117,7 @@ export const gameInfoComponent = (interaction, currentUserData) => {
     }
 
     if (currentUserData.embedData.gameType === GAME_TYPE.PUBLIC) {
-        const joinComponents = gameInfoAction();
+        const joinComponents = gameInfoAction(gameId);
 
         interaction.channel.send({
             embeds: [

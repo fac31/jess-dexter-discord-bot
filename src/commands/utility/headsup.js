@@ -28,8 +28,8 @@ async function execute(interaction) {
         await startGameComponent(interaction);
     } else if (subcommand === "join") {
         const gameId = interaction.options.getInteger("game_id");
-
-        joinGame(interaction, gameId);
+        const gameIdString = String(gameId).padStart(6, "0");
+        joinGame(interaction, gameIdString);
     }
 }
 
