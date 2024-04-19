@@ -1,3 +1,4 @@
+import { submitWordComponent } from "./components/submitWord.js";
 import { GAME_STATE, gamesIndex } from "./gamesIndex.js";
 
 const checkGameExists = (interaction, gameId) => {
@@ -37,10 +38,10 @@ const checkGameNotFull = (interaction, gameId) => {
 
 const checkGameUsers = (interaction, gameId) => {
     const game = gamesIndex[gameId];
-    const user = interaction.user.username;
+    const user = interaction.user.id;
     let usersUnique = true;
 
-    if (user === game.guesser || user === game.giver) {
+    if (user === game.guesserId || user === game.giverId) {
         usersUnique = false;
         interaction.reply({
             ephemeral: true,
@@ -67,20 +68,15 @@ export const joinGame = async (interaction, gameId) => {
     )
         return;
 
-    if (!game.giver) {
-        game.giver = interaction.user.username;
+    if (!game.giverId) {
+        // game.giver = interaction.user.username;
         game.giverId = interaction.user.id;
     } else {
-        game.guesser = interaction.user.username;
+        // game.guesser = interaction.user.username;
         game.guesserId = interaction.user.id;
     }
 
-    gamesIndex.gameState = GAME_STATE.PLAYING;
-
-    !interaction.reply({
-        ephemeral: true,
-        content: `Joined game!`,
-    });
+    game.gameState = GAME_STATE.PLAYING;
 
     const channel = interaction.guild.channels.cache.get(interaction.channelId);
 
@@ -90,6 +86,28 @@ export const joinGame = async (interaction, gameId) => {
         type: 12,
     });
 
+    // store the thread in case we need to use it later
+    game.activeThread = gameThread;
+
     await gameThread.members.add(game.giverId);
-    await gameThread.members.add(game.guesserId);
+
+    // this wont work while we are using ourselves as the second player
+    // once more than one person is joining this should function correctly
+    if (game.giverId == interaction.user.id) {
+        await interaction.reply({
+            ephemeral: true,
+            content: `Joined game! Please enter the thread and pick a word!`,
+        });
+    } else {
+        await interaction.reply({
+            ephemeral: true,
+            content: `Joined game! Waiting for Clue Giver to pick a word...`,
+        });
+    }
+
+    console.log(game);
+
+    submitWordComponent(game);
+
+    //await gameThread.members.add(game.guesserId);
 };
