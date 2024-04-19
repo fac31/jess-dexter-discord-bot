@@ -104,7 +104,7 @@ export const gameInfoComponent = (interaction, currentUserData) => {
                 ? interaction.user.id
                 : null,
         gameType: currentUserData.embedData.gameType,
-        gameState: GAME_STATE.STATUS,
+        gameState: GAME_STATE.PENDING,
     };
     gamesIndex[gameId] = newGame;
 

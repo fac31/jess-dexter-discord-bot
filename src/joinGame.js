@@ -75,7 +75,7 @@ export const joinGame = async (interaction, gameId) => {
         game.guesserId = interaction.user.id;
     }
 
-    GAME_STATE.STATUS = "playing";
+    gamesIndex.gameState = GAME_STATE.PLAYING;
 
     !interaction.reply({
         ephemeral: true,

@@ -9,7 +9,8 @@ export const GAME_TYPE = {
 };
 
 export const GAME_STATE = {
-    STATUS: "pending",
+    PENDING: "pending",
+    PLAYING: "playing",
 };
 
 export const gamesIndex = {};
