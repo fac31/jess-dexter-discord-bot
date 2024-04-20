@@ -61,48 +61,91 @@ const startGameActions = (game) => {
     return buttons;
 };
 
-export const submitWordComponent = async (interaction, game) => {
-    const message = await game.activeThread.send({
-        embeds: [submitWordEmbed(game)],
-        components: [startGameActions(game)],
+const getAiWord = async () => {
+    // TODO: fetch word!
+};
+
+export const submitWordComponent = (interaction, game) => {
+    // we wrap everything in a promise so the promise doesnt resolve right until we have a word
+    return new Promise(async (res, rej) => {
+        return rej();
+
+        const message = await game.activeThread.send({
+            embeds: [submitWordEmbed(game)],
+            components: [startGameActions(game)],
+        });
+
+        const collectorFilter = (i) => {
+            return i.user.id === interaction.user.id;
+        };
+
+        try {
+            // we only need to listen a single time
+            const buttonInteraction = await message.awaitMessageComponent({
+                filter: collectorFilter,
+                time: WORD_TIMEOUT,
+            });
+
+            const modalId = `wordModal_${game.id}`;
+            const inputId = `wordModalInp_${game.id}`;
+
+            const modal = new ModalBuilder()
+                .setCustomId(modalId)
+                .setTitle("Submit Custom Word");
+
+            const hobbiesInput = new TextInputBuilder()
+                .setCustomId(inputId)
+                .setLabel(
+                    "Submit a word of your choosing! (it is case insensitive!)"
+                )
+                .setMinLength(2)
+                .setMaxLength(50)
+                .setRequired(true)
+                .setStyle(TextInputStyle.Short);
+
+            const wordInput = new ActionRowBuilder().addComponents(
+                hobbiesInput
+            );
+
+            modal.addComponents(wordInput);
+
+            await buttonInteraction.showModal(modal);
+
+            try {
+                const modalResponse = await buttonInteraction.awaitModalSubmit({
+                    filter: async (i) => {
+                        const filter =
+                            collectorFilter(i) && i.customId === modalId;
+                        if (filter) {
+                            await i.deferReply();
+                        }
+                        return filter;
+                    },
+                    time: WORD_TIMEOUT,
+                });
+
+                const word = modalResponse.fields.getTextInputValue(inputId);
+
+                res(word);
+            } catch {
+                interaction.reply({
+                    ephemeral: true,
+                    content:
+                        "The modal failed and a word was not submitted. A new word will be picked by AI.",
+                });
+
+                // if the fetch request fails we want to basically just end the game
+                getAiWord().then(res).catch(rej);
+            }
+        } catch {
+            interaction.reply({
+                ephemeral: true,
+                content:
+                    "A word was not picked in time. A new word will be picked by AI.",
+            });
+
+            // if the fetch request fails we want to basically just end the game
+            getAiWord().then(res).catch(rej);
+        }
     });
-
-    const collectorFilter = (i) => i.user.id === interaction.user.id;
-
-    try {
-        // we only need to listen a single time
-        const buttonInteraction = await message.awaitMessageComponent({
-            filter: collectorFilter,
-            time: WORD_TIMEOUT,
-        });
-
-        const modalId = `wordModal_${game.id}`;
-
-        const modal = new ModalBuilder()
-            .setCustomId(modalId)
-            .setTitle("Submit Custom Word");
-
-        const hobbiesInput = new TextInputBuilder()
-            .setCustomId(`wordModalInp_${game.id}`)
-            .setLabel("Submit a word of your choosing!")
-            .setMinLength(2)
-            .setMaxLength(50)
-            .setRequired(true)
-            .setStyle(TextInputStyle.Short);
-
-        const wordInput = new ActionRowBuilder().addComponents(hobbiesInput);
-
-        modal.addComponents(wordInput);
-
-        await buttonInteraction.showModal(modal);
-
-        const modalResponse = await await buttonInteraction.awaitModalSubmit({
-            filter: (i) => i.customId == modalId && collectorFilter(i),
-            time: WORD_TIMEOUT,
-        });
-
-        console.log(modalResponse);
-    } catch {
-        // TODO: generate ai word
-    }
 };

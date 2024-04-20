@@ -105,7 +105,30 @@ export const joinGame = async (interaction, gameId) => {
         });
     }
 
-    submitWordComponent(interaction, game);
+    submitWordComponent(interaction, game)
+        .then(async (word) => {
+            console.log(game.id, word);
 
-    //await gameThread.members.add(game.guesserId);
+            game.currentWord = word.toLowerCase();
+            // add the player once we have the word
+            await gameThread.members.add(game.guesserId);
+        })
+        .catch(async () => {
+            // lock the thread and ping both users with an ephemeral message
+            await gameThread.setLocked(true);
+
+            gameThread.send({
+                content: `<@${game.giverId}>: A word could not be picked so the game could not continue. Please try again.`,
+                ephemeral: true,
+            });
+            gameThread.send({
+                content: `<@${game.guesserId}>: A word could not be picked so the game could not continue. Please try again.`,
+                ephemeral: true,
+            });
+
+            // delete the thread after a minute (give users time to read)
+            setTimeout(async () => {
+                await gameThread.delete();
+            }, 60_000);
+        });
 };
