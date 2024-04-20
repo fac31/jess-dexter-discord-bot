@@ -105,9 +105,7 @@ export const joinGame = async (interaction, gameId) => {
         });
     }
 
-    console.log(game);
-
-    submitWordComponent(game);
+    submitWordComponent(interaction, game);
 
     //await gameThread.members.add(game.guesserId);
 };
