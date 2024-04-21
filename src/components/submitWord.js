@@ -27,7 +27,7 @@ const submitWordEmbed = (game) => {
         .setAuthor(author)
         .setTitle("You are the Clue Giver!")
         .setDescription(
-            "Your job is to give clues to the other player about the given word. But first, you must pick a word!\nBe quick, the other player is waiting! (You have 60 seconds to pick a word or a random one will be generated)"
+            "Your job is to give clues to the other player about the given word. But first, you must pick a word!\nBe quick, the other player is waiting!"
         )
         .addFields(
             {
