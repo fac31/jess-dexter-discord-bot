@@ -12,9 +12,9 @@ import {
     EmbedBuilder,
 } from "discord.js";
 
-const publicGameInfoEmbed = (interaction, gameId, playerType, player) => {
+const publicGameInfoEmbed = (interaction, gameId, playerType) => {
     const author = {
-        name: `${player}'s HeadsUp Game`,
+        name: `${interaction.user.globalName}'s HeadsUp Game`,
     };
     if (interaction.user.avatar) {
         author.iconURL = `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`;
@@ -28,11 +28,16 @@ const publicGameInfoEmbed = (interaction, gameId, playerType, player) => {
             {
                 name: "**Guesser**",
                 value:
-                    playerType === PLAYER_TYPE.GUESSER ? player : "Spot open!",
+                    playerType === PLAYER_TYPE.GUESSER
+                        ? interaction.user.globalName
+                        : "Spot open!",
             },
             {
                 name: "**Clue Giver**",
-                value: playerType === PLAYER_TYPE.GIVER ? player : "Spot open!",
+                value:
+                    playerType === PLAYER_TYPE.GIVER
+                        ? interaction.user.globalName
+                        : "Spot open!",
             }
         );
 
@@ -86,19 +91,22 @@ export const gameInfoComponent = (interaction, currentUserData) => {
     const gameId = getUniqueGameId();
 
     const newGame = {
+        // interaction of the owner of the game
+        // the one that executed (/headsup start)
+        ownerInteraction: interaction,
         id: gameId,
-        guesser:
-            currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
-                ? interaction.user.username
-                : null,
+        // guesser:
+        //     currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
+        //         ? interaction.user.username
+        //         : null,
         guesserId:
             currentUserData.embedData.playerType === PLAYER_TYPE.GUESSER
                 ? interaction.user.id
                 : null,
-        giver:
-            currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
-                ? interaction.user.username
-                : null,
+        // giver:
+        //     currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
+        //         ? interaction.user.username
+        //         : null,
         giverId:
             currentUserData.embedData.playerType === PLAYER_TYPE.GIVER
                 ? interaction.user.id
@@ -124,8 +132,7 @@ export const gameInfoComponent = (interaction, currentUserData) => {
                 publicGameInfoEmbed(
                     interaction,
                     gameId,
-                    currentUserData.embedData.playerType,
-                    interaction.user.globalName
+                    currentUserData.embedData.playerType
                 ),
             ],
             components: joinComponents,
