@@ -6,9 +6,9 @@ import {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
+    ComponentType,
 } from "discord.js";
-
-const WORD_TIMEOUT = 60_000;
+import { endGame } from "../endGame.js";
 
 const aiButtonId = (gameId) => `ai_word_${gameId}`;
 const customButtonId = (gameId) => `custom_word_${gameId}`;
@@ -45,6 +45,24 @@ const submitWordEmbed = (game) => {
     return embed;
 };
 
+const wordPickedEmbed = (game, word) => {
+    const interaction = game.ownerInteraction;
+    const author = {
+        name: `${interaction.user.globalName}'s HeadsUp Game`,
+    };
+    if (interaction.user.avatar) {
+        author.iconURL = `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`;
+    }
+
+    const embed = new EmbedBuilder()
+        .setColor(0xffa600)
+        .setAuthor(author)
+        .setTitle("Word Picked")
+        .setDescription(word);
+
+    return embed;
+};
+
 const startGameActions = (game) => {
     const ai_word = new ButtonBuilder()
         .setCustomId(aiButtonId(game.id))
@@ -61,91 +79,106 @@ const startGameActions = (game) => {
     return buttons;
 };
 
-const getAiWord = async () => {
+const aiFallback = async () => {
     // TODO: fetch word!
+
+    return new Promise((res) => res("woooo"));
 };
 
 export const submitWordComponent = (interaction, game) => {
     // we wrap everything in a promise so the promise doesnt resolve right until we have a word
     return new Promise(async (res, rej) => {
-        return rej();
-
-        const message = await game.activeThread.send({
+        const submitWordMsg = await game.activeThread.send({
             embeds: [submitWordEmbed(game)],
             components: [startGameActions(game)],
         });
 
-        const collectorFilter = (i) => {
-            return i.user.id === interaction.user.id;
-        };
+        const buttonCollector = submitWordMsg.createMessageComponentCollector({
+            filter: (i) => i.user.id === interaction.user.id,
+            componentType: ComponentType.Button,
+            time: 10 * 60_000, // 10 minutes
+        });
 
-        try {
-            // we only need to listen a single time
-            const buttonInteraction = await message.awaitMessageComponent({
-                filter: collectorFilter,
-                time: WORD_TIMEOUT,
-            });
+        let pickedWord = null;
 
-            const modalId = `wordModal_${game.id}`;
-            const inputId = `wordModalInp_${game.id}`;
+        buttonCollector.on("collect", async (buttonInteraction) => {
+            if (buttonInteraction.customId == customButtonId(game.id)) {
+                const modalId = `wordModal_${game.id}`;
+                const inputId = `wordModalInp_${game.id}`;
 
-            const modal = new ModalBuilder()
-                .setCustomId(modalId)
-                .setTitle("Submit Custom Word");
+                const modal = new ModalBuilder()
+                    .setCustomId(modalId)
+                    .setTitle("Submit Custom Word");
 
-            const hobbiesInput = new TextInputBuilder()
-                .setCustomId(inputId)
-                .setLabel(
-                    "Submit a word of your choosing! (it is case insensitive!)"
-                )
-                .setMinLength(2)
-                .setMaxLength(50)
-                .setRequired(true)
-                .setStyle(TextInputStyle.Short);
+                const hobbiesInput = new TextInputBuilder()
+                    .setCustomId(inputId)
+                    .setLabel("Submit your word! (it is case insensitive!)")
+                    .setMinLength(2)
+                    .setMaxLength(50)
+                    .setRequired(true)
+                    .setStyle(TextInputStyle.Short);
 
-            const wordInput = new ActionRowBuilder().addComponents(
-                hobbiesInput
-            );
+                const wordInput = new ActionRowBuilder().addComponents(
+                    hobbiesInput
+                );
 
-            modal.addComponents(wordInput);
+                modal.addComponents(wordInput);
 
-            await buttonInteraction.showModal(modal);
+                await buttonInteraction.showModal(modal);
 
-            try {
-                const modalResponse = await buttonInteraction.awaitModalSubmit({
-                    filter: async (i) => {
-                        const filter =
-                            collectorFilter(i) && i.customId === modalId;
-                        if (filter) {
-                            await i.deferReply();
-                        }
-                        return filter;
-                    },
-                    time: WORD_TIMEOUT,
-                });
+                buttonInteraction
+                    .awaitModalSubmit({
+                        filter: (i) =>
+                            i.user.id === interaction.user.id &&
+                            i.customId === modalId,
+                        time: 10 * 60_000, // 10 minutes
+                    })
+                    .then(async (modalResponse) => {
+                        const word =
+                            modalResponse.fields.getTextInputValue(inputId);
 
-                const word = modalResponse.fields.getTextInputValue(inputId);
+                        pickedWord = word;
 
-                res(word);
-            } catch {
-                interaction.reply({
-                    ephemeral: true,
-                    content:
-                        "The modal failed and a word was not submitted. A new word will be picked by AI.",
-                });
+                        await submitWordMsg.delete();
+                        await modalResponse.reply({
+                            embeds: [wordPickedEmbed(game, word)],
+                            ephemeral: true,
+                        });
 
-                // if the fetch request fails we want to basically just end the game
-                getAiWord().then(res).catch(rej);
+                        res(word);
+                    })
+                    .catch(async (e) => {
+                        console.log("`awaitModalSubmit` failed", e);
+
+                        await buttonInteraction.reply({
+                            ephemeral: true,
+                            content:
+                                "There was an issue with the modal. Please try again.",
+                        });
+                    });
+            } else if (buttonInteraction.customId == aiButtonId(game.id)) {
+                buttonInteraction.deferReply({ ephemeral: true });
+
+                aiFallback()
+                    .then(async (word) => {
+                        await submitWordMsg.delete();
+                        await buttonInteraction.reply({
+                            ephemeral: true,
+                            embeds: [wordPickedEmbed(game, word)],
+                        });
+                        res(word);
+                    })
+                    .catch(async () => {
+                        await submitWordMsg.delete();
+                        rej();
+                    });
             }
-        } catch {
-            interaction.reply({
-                ephemeral: true,
-                content:
-                    "A word was not picked in time. A new word will be picked by AI.",
-            });
+        });
 
-            // if the fetch request fails we want to basically just end the game
-            getAiWord().then(res).catch(rej);
-        }
+        buttonCollector.on("end", () => {
+            if (pickedWord == null) {
+                endGame(game, "A word took too long to be picked!");
+            }
+        });
     });
 };

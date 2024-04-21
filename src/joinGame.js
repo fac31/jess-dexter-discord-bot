@@ -1,5 +1,6 @@
 import { submitWordComponent } from "./components/submitWord.js";
 import { GAME_STATE, gamesIndex } from "./gamesIndex.js";
+import { endGame } from "./endGame.js";
 
 const checkGameExists = (interaction, gameId) => {
     let idExists = false;
@@ -113,22 +114,10 @@ export const joinGame = async (interaction, gameId) => {
             // add the player once we have the word
             await gameThread.members.add(game.guesserId);
         })
-        .catch(async () => {
-            // lock the thread and ping both users with an ephemeral message
-            await gameThread.setLocked(true);
-
-            gameThread.send({
-                content: `<@${game.giverId}>: A word could not be picked so the game could not continue. Please try again.`,
-                ephemeral: true,
-            });
-            gameThread.send({
-                content: `<@${game.guesserId}>: A word could not be picked so the game could not continue. Please try again.`,
-                ephemeral: true,
-            });
-
-            // delete the thread after a minute (give users time to read)
-            setTimeout(async () => {
-                await gameThread.delete();
-            }, 60_000);
+        .catch(() => {
+            endGame(
+                game,
+                "A word could not be picked so the game could not continue. Please try again."
+            );
         });
 };
