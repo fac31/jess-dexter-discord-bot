@@ -56,10 +56,12 @@ const privateGameInfoEmbed = (interaction, gameId) => {
 };
 
 const gameInfoAction = (gameId) => {
+    const isPlaying = gamesIndex[gameId].gameState === GAME_STATE.PLAYING;
     const join = new ButtonBuilder()
         .setCustomId(`${START_GAME_IDS.JOIN_BUTTON}_${gameId}`)
         .setLabel("Join Game!")
-        .setStyle(ButtonStyle.Primary);
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(isPlaying);
 
     const joinButton = new ActionRowBuilder().addComponents(join);
 
