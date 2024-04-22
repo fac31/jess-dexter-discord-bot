@@ -12,6 +12,7 @@ import { handlePing } from "./events/pingHandler.js";
 import { handleInitialise } from "./events/initialiseHandler.js";
 import { handleInteraction } from "./events/interactionHandler.js";
 import { handleJoin } from "./events/joinHandler.js";
+import { handleGuess } from "./events/guessHandler.js";
 
 export const client = new Client({
     intents: [
@@ -32,6 +33,7 @@ handlePing(client);
 handleIntro(client);
 handleInteraction(client);
 handleJoin(client);
+handleGuess(client);
 client.login(discordToken);
 
 // Slash commands

@@ -123,7 +123,7 @@ export const submitWordComponent = (interaction, game) => {
         });
 
         const buttonCollector = submitWordMsg.createMessageComponentCollector({
-            filter: (i) => i.user.id === interaction.user.id,
+            filter: (i) => i.user.id === game.giverId,
             componentType: ComponentType.Button,
             time: 10 * 60_000, // 10 minutes
         });
@@ -158,7 +158,7 @@ export const submitWordComponent = (interaction, game) => {
                 buttonInteraction
                     .awaitModalSubmit({
                         filter: (i) =>
-                            i.user.id === interaction.user.id &&
+                            i.user.id === game.giverId &&
                             i.customId === modalId,
                         time: 10 * 60_000, // 10 minutes
                     })

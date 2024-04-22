@@ -1,7 +1,12 @@
 import { submitWordComponent } from "./components/submitWord.js";
-import { GAME_STATE, gamesIndex } from "./gamesIndex.js";
+import { GAME_STATE, GAME_TYPE, gamesIndex } from "./gamesIndex.js";
 import { endGame } from "./endGame.js";
 import { joinGameComponents } from "./components/gameInfo.js";
+import {
+    forfeitGameComponent,
+    forfeitGameAction,
+} from "./components/forfeitGame.js";
+import { threadWelcomeComponent } from "./components/threadWelcome.js";
 
 const checkGameExists = (interaction, gameId) => {
     let idExists = false;
@@ -81,15 +86,17 @@ export const joinGame = async (interaction, gameId) => {
     game.gameState = GAME_STATE.PLAYING;
 
     // disabling join button as player2 joins
-    const components = joinGameComponents(gameId, {
-        startDisabled: true,
-    });
-    const message = await interaction.channel.messages.fetch(
-        interaction.message.id
-    );
-    await message.edit({
-        components: components,
-    });
+    if (game.gameType === GAME_TYPE.PUBLIC) {
+        const components = joinGameComponents(gameId, {
+            startDisabled: true,
+        });
+        const message = await interaction.channel.messages.fetch(
+            interaction.message.id
+        );
+        await message.edit({
+            components: components,
+        });
+    }
 
     const channel = interaction.guild.channels.cache.get(interaction.channelId);
 
@@ -120,13 +127,26 @@ export const joinGame = async (interaction, gameId) => {
 
     submitWordComponent(interaction, game)
         .then(async (word) => {
-            console.log(game.id, word);
-
             game.currentWord = word.toLowerCase();
             // add the player once we have the word
             await gameThread.members.add(game.guesserId);
+
+            const welcomeMessage = await gameThread.send({
+                embeds: [
+                    threadWelcomeComponent(
+                        interaction.guild.members.cache,
+                        game
+                    ),
+                ],
+                components: [forfeitGameComponent(game)],
+            });
+            welcomeMessage.pin();
+
+            // TODO: finish forfeit
+            forfeitGameAction(welcomeMessage, game);
         })
-        .catch(() => {
+        .catch((e) => {
+            console.error("failed word", e);
             endGame(
                 game,
                 "A word could not be picked so the game could not continue. Please try again."
