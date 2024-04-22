@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import OpenAi from "openai";
 
 dotenv.config();
-const key = process.env.OPEN_AI_KEY;
+export const openAiKey = process.env.OPEN_AI_KEY;
 const discordToken = process.env.DISCORD_KEY;
 
 // Initialise Discord bot
@@ -25,6 +25,8 @@ export const openai = new OpenAi({
     apiKey: process.env.OPEN_AI_KEY,
 });
 
+setOpenAiClient(openai);
+
 handleInitialise(client);
 handlePing(client);
 handleIntro(client);
@@ -37,6 +39,7 @@ client.login(discordToken);
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { setOpenAiClient } from "./components/submitWord.js";
 
 client.commands = new Collection();
 
@@ -57,7 +60,6 @@ for (const folder of commandFolders) {
         const command = await import(filePath);
 
         if ("data" in command && "execute" in command) {
-            console.log(file);
             client.commands.set(command.data.name, command);
         } else {
             console.log(

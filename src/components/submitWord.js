@@ -9,7 +9,9 @@ import {
     ComponentType,
 } from "discord.js";
 import { endGame } from "../endGame.js";
-import { openai } from "../index.js";
+
+let openAiClient = null;
+export const setOpenAiClient = (client) => (openAiClient = client);
 
 const aiButtonId = (gameId) => `ai_word_${gameId}`;
 const customButtonId = (gameId) => `custom_word_${gameId}`;
@@ -82,7 +84,7 @@ const startGameActions = (game) => {
 
 export const aiWord = async () => {
     return new Promise((res, rej) => {
-        openai.chat.completions
+        openAiClient.chat.completions
             .create(
                 {
                     messages: [
