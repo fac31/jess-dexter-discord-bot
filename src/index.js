@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import OpenAi from "openai";
+
 dotenv.config();
 const key = process.env.OPEN_AI_KEY;
 const discordToken = process.env.DISCORD_KEY;
@@ -18,6 +20,15 @@ export const client = new Client({
         GatewayIntentBits.MessageContent,
     ],
 });
+
+export const openai = new OpenAi({
+    apiKey: process.env.OPEN_AI_KEY,
+});
+
+import { aiWord } from "./components/submitWord.js";
+aiWord()
+    .then((w) => console.log(w))
+    .catch(() => console.error("failed"));
 
 handleInitialise(client);
 handlePing(client);

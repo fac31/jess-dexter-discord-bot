@@ -9,6 +9,7 @@ import {
     ComponentType,
 } from "discord.js";
 import { endGame } from "../endGame.js";
+import { openai } from "../index.js";
 
 const aiButtonId = (gameId) => `ai_word_${gameId}`;
 const customButtonId = (gameId) => `custom_word_${gameId}`;
@@ -79,10 +80,36 @@ const startGameActions = (game) => {
     return buttons;
 };
 
-const aiFallback = async () => {
-    // TODO: fetch word!
-
-    return new Promise((res) => res("woooo"));
+export const aiWord = async () => {
+    return new Promise((res, rej) => {
+        openai.chat.completions
+            .create(
+                {
+                    messages: [
+                        {
+                            role: "system",
+                            content:
+                                "You are part of a HeadsUp game. Your job is to pick a SINGLE random word. DO NOT say ANYTHING else except the word you chose. Add NO punctuation and DO NOT pick plural words.",
+                        },
+                        {
+                            role: "user",
+                            content:
+                                "Please pick a unique random word for a HeadsUp game.",
+                        },
+                    ],
+                    model: "gpt-4",
+                },
+                {
+                    maxRetries: 3,
+                }
+            )
+            .then((chatCompletion) => {
+                // we only care about 1 choice
+                const word = chatCompletion.choices[0].message.content;
+                res(word);
+            })
+            .catch(rej);
+    });
 };
 
 export const submitWordComponent = (interaction, game) => {
@@ -159,7 +186,7 @@ export const submitWordComponent = (interaction, game) => {
             } else if (buttonInteraction.customId == aiButtonId(game.id)) {
                 buttonInteraction.deferReply({ ephemeral: true });
 
-                aiFallback()
+                aiWord()
                     .then(async (word) => {
                         await submitWordMsg.delete();
                         await buttonInteraction.reply({
