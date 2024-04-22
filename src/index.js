@@ -25,11 +25,6 @@ export const openai = new OpenAi({
     apiKey: process.env.OPEN_AI_KEY,
 });
 
-import { aiWord } from "./components/submitWord.js";
-aiWord()
-    .then((w) => console.log(w))
-    .catch(() => console.error("failed"));
-
 handleInitialise(client);
 handlePing(client);
 handleIntro(client);
@@ -58,9 +53,11 @@ for (const folder of commandFolders) {
         .filter((file) => file.endsWith(".js"));
     for (const file of commandFiles) {
         const filePath = `./commands/${folder}/${file}`;
+
         const command = await import(filePath);
 
         if ("data" in command && "execute" in command) {
+            console.log(file);
             client.commands.set(command.data.name, command);
         } else {
             console.log(
