@@ -1,6 +1,7 @@
 import { submitWordComponent } from "./components/submitWord.js";
 import { GAME_STATE, gamesIndex } from "./gamesIndex.js";
 import { endGame } from "./endGame.js";
+import { joinGameComponents } from "./components/gameInfo.js";
 
 const checkGameExists = (interaction, gameId) => {
     let idExists = false;
@@ -78,6 +79,17 @@ export const joinGame = async (interaction, gameId) => {
     }
 
     game.gameState = GAME_STATE.PLAYING;
+
+    // disabling join button as player2 joins
+    const components = joinGameComponents(gameId, {
+        startDisabled: true,
+    });
+    const message = await interaction.channel.messages.fetch(
+        interaction.message.id
+    );
+    await message.edit({
+        components: components,
+    });
 
     const channel = interaction.guild.channels.cache.get(interaction.channelId);
 
