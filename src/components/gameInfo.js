@@ -91,6 +91,16 @@ export const gameInfoComponent = (interaction, currentUserData) => {
     }
     const gameId = getUniqueGameId();
 
+    const expireTimeout = setTimeout(async () => {
+        interaction.editReply({
+            content: `Game left idle for too long!`,
+            components: [],
+            embeds: [],
+        });
+
+        delete gamesIndex[gameId];
+    }, 60_000 * 10);
+
     const newGame = {
         // interaction of the owner of the game
         // the one that executed (/headsup start)
@@ -115,6 +125,7 @@ export const gameInfoComponent = (interaction, currentUserData) => {
         gameType: currentUserData.embedData.gameType,
         gameState: GAME_STATE.PENDING,
         currentWord: "",
+        expireTimeout,
     };
     gamesIndex[gameId] = newGame;
 
