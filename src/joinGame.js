@@ -62,6 +62,19 @@ const checkGameUsers = (interaction, gameId) => {
 export const joinGame = async (interaction, gameId) => {
     const game = gamesIndex[gameId.toString()];
 
+    if (game == null) {
+        // in the off-chance they join a game just as it expires, we tell the user here
+        interaction.reply({
+            ephemeral: true,
+            content: `This game has been closed. Sorry!`,
+        });
+
+        return;
+    }
+
+    // remove the timeout so it doesnt trigger after the game has started
+    clearTimeout(game.expireTimeout);
+
     // Swap to this if check once testing complete
     //   if (
     //     !checkGameExists(interaction, gameId) ||
