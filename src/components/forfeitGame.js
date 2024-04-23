@@ -9,16 +9,20 @@ import { endGame } from "../endGame.js";
 const forfeitButtonId = (gameId) => `forfeit_${gameId}`;
 
 export const forfeitGameAction = (message, game) => {
+    const filter = (i) => {
+        i.deferUpdate();
+        return i.user.id === game.giverId || i.user.id === game.guesserId;
+    };
+
     const buttonCollector = message.createMessageComponentCollector({
-        filter: (i) =>
-            i.user.id === game.giverId || i.user.id === game.guesserId,
+        filter: filter,
         componentType: ComponentType.Button,
         time: 2_147_483_646,
     });
 
     buttonCollector.on("collect", async (buttonInteraction) => {
         if (buttonInteraction.customId == forfeitButtonId(game.id)) {
-            buttonCollector.stop();
+            await buttonCollector.stop();
 
             await endGame(
                 game,

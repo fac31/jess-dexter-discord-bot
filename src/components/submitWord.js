@@ -168,6 +168,8 @@ export const submitWordComponent = (interaction, game) => {
 
                         pickedWord = word;
 
+                        buttonCollector.stop();
+
                         await submitWordMsg.delete();
                         await modalResponse.reply({
                             embeds: [wordPickedEmbed(game, word)],
@@ -190,14 +192,19 @@ export const submitWordComponent = (interaction, game) => {
 
                 aiWord()
                     .then(async (word) => {
+                        pickedWord = word;
+
+                        buttonCollector.stop();
+
                         await submitWordMsg.delete();
-                        await buttonInteraction.reply({
+                        await buttonInteraction.editReply({
                             ephemeral: true,
                             embeds: [wordPickedEmbed(game, word)],
                         });
                         res(word);
                     })
-                    .catch(async () => {
+                    .catch(async (e) => {
+                        console.log("`aiWord` failed", e);
                         await submitWordMsg.delete();
                         rej();
                     });
