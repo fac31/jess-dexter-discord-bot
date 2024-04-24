@@ -75,26 +75,24 @@ export const joinGame = async (interaction, gameId) => {
     // remove the timeout so it doesnt trigger after the game has started
     clearTimeout(game.expireTimeout);
 
-    // Swap to this if check once testing complete
-    //   if (
-    //     !checkGameExists(interaction, gameId) ||
-    //     checkGameNotFull(interaction, gameId) ||
-    //     checkGameUsers(interaction, gameId)
-    // )
-
     if (
         !checkGameExists(interaction, gameId) ||
-        checkGameNotFull(interaction, gameId)
+        checkGameNotFull(interaction, gameId) ||
+        checkGameUsers(interaction, gameId)
     )
-        return;
+        if (!game.giverId) {
+            // if (
+            //     !checkGameExists(interaction, gameId) ||
+            //     checkGameNotFull(interaction, gameId)
+            // )
+            //     return;
 
-    if (!game.giverId) {
-        // game.giver = interaction.user.username;
-        game.giverId = interaction.user.id;
-    } else {
-        // game.guesser = interaction.user.username;
-        game.guesserId = interaction.user.id;
-    }
+            // game.giver = interaction.user.username;
+            game.giverId = interaction.user.id;
+        } else {
+            // game.guesser = interaction.user.username;
+            game.guesserId = interaction.user.id;
+        }
 
     game.gameState = GAME_STATE.PLAYING;
 
@@ -155,7 +153,6 @@ export const joinGame = async (interaction, gameId) => {
             });
             welcomeMessage.pin();
 
-            // TODO: finish forfeit
             forfeitGameAction(welcomeMessage, game);
         })
         .catch((e) => {
